@@ -2,7 +2,7 @@ import uos
 import machine
 import utime
 import time
-from machine import Pin
+from machine import Pin, ADC, PWM
 
 led2=Pin(2,Pin.OUT)
 led3 = Pin(3,Pin.OUT)
@@ -16,6 +16,13 @@ led5.value(0)
 led6.value(0)
 led7.value(0)
 
+A_1A_pin = 15                 # Motor drive module
+ 
+def setup():
+    global A_1A
+    
+    A_1A = PWM(Pin(A_1A_pin))
+    A_1A.freq(1000)             #Set the driver operating frequency to 1K
 
 recv_buf="" # receive buffer global variable
 
@@ -140,6 +147,12 @@ while True:
         elif(api=='/bathroomoff'):
             print("Bath OFF!")
             led7.value(0)
+	elif api == '/fanon':
+	    setup()
+	    A_1A.duty_u16(40000)
+	elif api == '/fanoff':
+	    A_1A.duty_u16(0)
+
         Send_AT_Cmd('AT+CIPCLOSE='+ connection_id+'\r\n') # once file sent, close connection
         utime.sleep(2.0)
         recv_buf="" #reset buffer
