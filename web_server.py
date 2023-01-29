@@ -2,26 +2,54 @@ import uos
 import machine
 import utime
 import time
-from machine import Pin
+from machine import Pin, ADC, PWM
 
-led2=Pin(2,Pin.OUT)
-led3 = Pin(3,Pin.OUT)
-led5 = Pin(5,Pin.OUT)
-led6 = Pin(6,Pin.OUT)
-led7 = Pin(7,Pin.OUT)
-
-led2.value(0)
-led3.value(0)
-led5.value(0)
-led6.value(0)
-led7.value(0)
+led1 = Pin(8,Pin.OUT)
+led2 = Pin(6,Pin.OUT)
+led3 = Pin(2,Pin.OUT)
+led4 = Pin(3,Pin.OUT)
+led5 = Pin(4,Pin.OUT)
+led6 = Pin(5,Pin.OUT)
 
 
+led1.value(1)#guestroom
+led2.value(1)#swimmingpool
+led3.value(1)#liftroom
+led4.value(1)#loungeroom
+led5.value(1)#bedroom
+led6.value(1)#studyroom
+
+A_1A_pin = 15                 # Motor drive module
+
+a1 = Pin(15,Pin.OUT)
+a2 = Pin(14,Pin.OUT)
+en = Pin(13,Pin.OUT)
+
+en.high()
+a1.low()
+a2.low()
+    
 recv_buf="" # receive buffer global variable
+
+buzzer = PWM(Pin(9))
+buzzer.freq(500)
+
+pir = Pin(16,Pin.IN,Pin.PULL_UP)
 
 print()
 print("Machine: \t" + uos.uname()[4])
 print("MicroPython: \t" + uos.uname()[3])
+#buzzer.duty_u16(0)
+
+while(True):
+    if pir.value()==0:
+        print("Buzzer On")
+        buzzer.duty_u16(1000)
+        utime.sleep(1.0)
+    else:
+        print("Waiting for movement")
+        buzzer.duty_u16(0)
+        utime.sleep(0.2)
 
 uart0 = machine.UART(0, baudrate=115200)
 print(uart0)
@@ -71,7 +99,7 @@ Send_AT_Cmd('AT+CWMODE?\r\n')  #Query the WiFi mode
 Send_AT_Cmd('AT+CWMODE=1\r\n') #Set the WiFi mode = Station mode
 Send_AT_Cmd('AT+CWMODE?\r\n')  #Query the WiFi mode again
 #Send_AT_Cmd('AT+CWLAP\r\n', timeout=10000) #List available APs
-Connect_WiFi('AT+CWJAP="JETFIBER-PARNJAL-4G","7789821087"\r\n', timeout=5000) #Connect to AP
+Connect_WiFi('AT+CWJAP="WIFI_NAME","WIFI_PASSWORD"\r\n', timeout=5000) #Connect to AP
 Send_AT_Cmd('AT+CIFSR\r\n')    #Obtain the Local IP Address
 utime.sleep(3.0)
 Send_AT_Cmd('AT+CIPMUX=1\r\n')    #Obtain the Local IP Address
@@ -89,8 +117,6 @@ while True:
         print("main resp:")
         print(res)
         get_index = res.find("GET")
-        print(f'get_index : {get_index}')
-        print("wtf",res[get_index+4:65])
         
         api = res[get_index+4:65].split(' ')[0]
         print(f'api : {api}')
@@ -107,26 +133,26 @@ while True:
             uart0.write('<!DOCTYPE HTML>'+'\r\n')
             uart0.write('<html>'+'\r\n')
             uart0.write('<body><center><h1>I\'m Raspberry Pi & I\'m listening...</h1></center>'+'\r\n')
-            uart0.write('<center><h2>cool</h2></center>'+'\r\n')
+            uart0.write('<center><a href="https://iot-smart-home-nine.vercel.app/">Go to Controller</a></center>'+'\r\n')
             uart0.write('</body></html>'+'\r\n')
             utime.sleep(4.0)
-        elif(api=='/livingroomon'):
-            print("Bedroom On!")
-            led2.value(1)
-        elif(api=='/livingroomoff'):
-            print("Bedroom Off!")
-            led2.value(0)
         elif(api=='/loungeroomon'):
             print("Lounge On!")
-            led3.value(1)
+            led4.value(1)
         elif(api=='/loungeroomoff'):
-            print("Lounge OFF!")
-            led3.value(0)
-        elif(api=='/liftroomon'):
-            print("Lift On!")
+            print("Lounge Off!")
+            led4.value(0)
+        elif(api=='/guestroomon'):
+            print("Guest On!")
+            led1.value(1)
+        elif(api=='/guestroomoff'):
+            print("Guest OFF!")
+            led1.value(0)
+        elif(api=='/studyroomon'):
+            print("Living On!")
             led6.value(1)
-        elif(api=='/liftroomoff'):
-            print("Lift OFF!")
+        elif(api=='/studyroomoff'):
+            print("Living OFF!")
             led6.value(0)   
         elif(api=='/bedroomon'):
             print("Bed On!")
@@ -134,12 +160,32 @@ while True:
         elif(api=='/bedroomoff'):
             print("Bed OFF!")
             led5.value(0)
-        elif(api=='/bathroomon'):
-            print("Bath On!")
-            led7.value(1)
-        elif(api=='/bathroomoff'):
-            print("Bath OFF!")
-            led7.value(0)
+        elif(api=='/swimmingpoolon'):
+            print("Swimmingpool On!")
+            led2.value(1)
+        elif(api=='/swimmingpooloff'):
+            print("Swimmingpool OFF!")
+            led2.value(0)
+            liftroom
+        elif(api=='/liftroomon'):
+            print("Lift Room On!")
+            led3.value(1)
+        elif(api=='/liftroomoff'):
+            print("Lift Room OFF!")
+            led3.value(0)
+        elif api == '/fanon':
+            a1.low()
+            a2.high()
+        elif api == '/fanoff':
+            a1.low()
+            a2.low()
+        elif api == '/buzzeron':
+            buzzer.duty_u16(1000)
+        elif api == '/buzzeroff':
+            buzzer.duty_u16(0)
+
+        
+            
         Send_AT_Cmd('AT+CIPCLOSE='+ connection_id+'\r\n') # once file sent, close connection
         utime.sleep(2.0)
         recv_buf="" #reset buffer
